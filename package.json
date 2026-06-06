@@ -1,0 +1,19 @@
+{
+  "name": "tweetbattle402",
+  "private": true,
+  "packageManager": "pnpm@10.28.2",
+  "scripts": {
+    "dev": "turbo dev --filter=@tweetbattle402/web",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "contracts:compile": "pnpm --filter @tweetbattle402/contracts compile",
+    "contracts:test": "pnpm --filter @tweetbattle402/contracts test",
+    "contracts:deploy": "pnpm --filter @tweetbattle402/contracts deploy:monad"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.2"
+  }
+}

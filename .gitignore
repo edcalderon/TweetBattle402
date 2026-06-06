@@ -1,0 +1,16 @@
+node_modules
+.next
+dist
+artifacts
+cache
+coverage
+.turbo
+.env
+.env.local
+packages/contracts/typechain-types
+tempo/node_modules
+tempo/.tempo
+tempo/.tempo/
+tempo/node_modules/
+tempo/dist/
+config/gcloud-private.json
