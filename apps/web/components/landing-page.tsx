@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowRight,
@@ -10,9 +13,11 @@ import {
   Sparkles,
   Vote,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { BattleCard } from "@/components/battle-card";
+import { usePublicClient } from "wagmi";
 import { demoBattles } from "@/lib/demo-data";
+import { BattleCard } from "@/components/battle-card";
+import { Button } from "@/components/ui/button";
+import { fetchBattles, tweetBattleArenaContract } from "@/lib/onchain";
 
 const steps = [
   {
@@ -36,6 +41,21 @@ const steps = [
 ] as const;
 
 export function LandingPage() {
+  const publicClient = usePublicClient();
+  const {
+    data: onchainBattles,
+    isError,
+    isLoading,
+  } = useQuery({
+    queryKey: ["tweetbattle402", "landing-battles"],
+    queryFn: () => fetchBattles(publicClient),
+    enabled: Boolean(tweetBattleArenaContract && publicClient),
+    refetchInterval: 20_000,
+  });
+  const sourceBattles = tweetBattleArenaContract
+    ? onchainBattles ?? []
+    : demoBattles;
+
   return (
     <main>
       <section className="noise relative overflow-hidden border-b-2 border-ink bg-ink text-paper">
@@ -214,10 +234,28 @@ export function LandingPage() {
           </Button>
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
-          {demoBattles.map((battle) => (
+          {sourceBattles.map((battle) => (
             <BattleCard key={battle.id} battle={battle} />
           ))}
         </div>
+        {tweetBattleArenaContract && isLoading && sourceBattles.length === 0 && (
+          <div className="mt-6 border-2 border-dashed border-ink p-6 text-sm font-bold">
+            Loading on-chain battles...
+          </div>
+        )}
+        {tweetBattleArenaContract && isError && (
+          <div className="mt-6 border-2 border-ember bg-white p-4 text-sm font-semibold">
+            On-chain battles could not be loaded from the Monad RPC.
+          </div>
+        )}
+        {tweetBattleArenaContract &&
+          !isLoading &&
+          !isError &&
+          sourceBattles.length === 0 && (
+            <div className="mt-6 border-2 border-dashed border-ink p-6 text-sm font-bold">
+              No on-chain battles found yet.
+            </div>
+          )}
       </section>
 
       <section className="border-t-2 border-ink bg-acid px-4 py-16 md:px-8">

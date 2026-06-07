@@ -63,6 +63,9 @@ export const BASE_VOTE_PRICE_MON = Number(
   process.env.NEXT_PUBLIC_BASE_VOTE_PRICE ?? 0.01,
 );
 
+export const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
 export const BATTLE_STATUS_LABELS = {
   PendingAcceptance: "Pending acceptance",
   Active: "Arguments live",
@@ -90,6 +93,10 @@ export function formatMon(value: bigint | string | number, digits = 2) {
 
 export function buildBattleCode(id: string | number) {
   return `TB402-${id}`;
+}
+
+export function buildBattleUrl(id: string | number) {
+  return new URL(`/battle/${id}`, APP_URL).toString();
 }
 
 export function validateTweetUrl(value: string) {

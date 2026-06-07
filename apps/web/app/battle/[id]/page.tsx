@@ -7,6 +7,10 @@ export const metadata: Metadata = {
     "Follow the arguments, fund a quadratic verdict, and inspect the final settlement.",
 };
 
-export default function BattlePage() {
-  return <BattleRoomPage />;
+export default function BattlePage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  return <BattleRoomPage key={params.id} />;
 }

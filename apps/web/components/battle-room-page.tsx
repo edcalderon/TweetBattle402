@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import {
   ArrowUpRight,
@@ -31,6 +31,7 @@ import {
   BATTLE_STATUS_LABELS,
   buildBattleCode,
   buildChallengeTweet,
+  buildBattleUrl,
   computeQuadraticVoteCost,
   generateXIntentUrl,
   validateTweetUrl,
@@ -125,27 +126,29 @@ export function BattleRoomPage() {
   const id = Number.isFinite(parsedId) && parsedId > 0 ? parsedId : 402;
   const seedBattle = demoBattles.find((item) => item.id === id) ?? demoBattles[0];
 
-  const [demoStatus, setDemoStatus] = useState<BattleStatusName>(seedBattle.status);
+  const [demoStatus, setDemoStatus] = useState<BattleStatusName>(
+    () => seedBattle.status,
+  );
   const [demoSubmissions, setDemoSubmissions] = useState<BattleSubmission[]>(
-    buildDemoSubmissions(seedBattle.id),
+    () => buildDemoSubmissions(seedBattle.id),
   );
   const [tweetType, setTweetType] = useState<TweetType>("Counterargument");
   const [draft, setDraft] = useState("");
   const [tweetUrl, setTweetUrl] = useState("");
   const [urlError, setUrlError] = useState("");
-  const [acceptHandle, setAcceptHandle] = useState(`@${seedBattle.opponentHandle}`);
   const [votePower, setVotePower] = useState(3);
   const [voteSide, setVoteSide] = useState<BattleSide>("challenger");
   const [demoVoteRecorded, setDemoVoteRecorded] = useState(false);
   const [aiResult, setAiResult] = useState<JudgeResult | null>(
-    seedBattle.status === "Finalized"
-      ? {
-          challengerScore: 7180,
-          opponentScore: 8430,
-          reasoning:
-            "The opponent made the more coherent causal case and answered the strongest counterargument directly.",
-        }
-      : null,
+    () =>
+      seedBattle.status === "Finalized"
+        ? {
+            challengerScore: 7180,
+            opponentScore: 8430,
+            reasoning:
+              "The opponent made the more coherent causal case and answered the strongest counterargument directly.",
+          }
+        : null,
   );
   const [notice, setNotice] = useState("");
   const [working, setWorking] = useState("");
@@ -159,39 +162,48 @@ export function BattleRoomPage() {
     enabled: Boolean(tweetBattleArenaContract && publicClient && id > 0),
     refetchInterval: 20_000,
   });
+  const isOnchainMode = Boolean(tweetBattleArenaContract);
+  const onchainBattle = roomData?.battle ?? null;
+  const battleOpponentHandle =
+    onchainBattle?.opponentHandle ?? seedBattle.opponentHandle;
 
-  useEffect(() => {
-    setDemoStatus(seedBattle.status);
-    setDemoSubmissions(buildDemoSubmissions(seedBattle.id));
-    setTweetType("Counterargument");
-    setDraft("");
-    setTweetUrl("");
-    setUrlError("");
-    setAcceptHandle(`@${seedBattle.opponentHandle}`);
-    setVotePower(3);
-    setVoteSide("challenger");
-    setDemoVoteRecorded(false);
-    setNotice("");
-    setWorking("");
-    setAiResult(
-      seedBattle.status === "Finalized"
-        ? {
-            challengerScore: 7180,
-            opponentScore: 8430,
-            reasoning:
-              "The opponent made the more coherent causal case and answered the strongest counterargument directly.",
-          }
-        : null,
+  if (isOnchainMode && isLoading) {
+    return (
+      <main className="mx-auto flex min-h-[60vh] max-w-[1440px] items-center justify-center px-4 py-16 md:px-8">
+        <div className="border-2 border-ink bg-white p-8 text-sm font-bold shadow-hard">
+          Loading on-chain battle data...
+        </div>
+      </main>
     );
-  }, [id, seedBattle]);
+  }
 
-  const battle = roomData?.battle ?? buildDemoBattleDetails(seedBattle, demoStatus);
-  useEffect(() => {
-    setAcceptHandle(`@${battle.opponentHandle}`);
-  }, [battle.opponentHandle, id]);
-  const submissions = roomData?.submissions ?? demoSubmissions;
+  if (isOnchainMode && isError) {
+    return (
+      <main className="mx-auto flex min-h-[60vh] max-w-[1440px] items-center justify-center px-4 py-16 md:px-8">
+        <div className="max-w-xl border-2 border-ember bg-white p-8 text-sm font-bold shadow-hard">
+          On-chain battle data could not be loaded from Monad RPC. The page is
+          waiting on live contract data instead of a demo fallback.
+        </div>
+      </main>
+    );
+  }
+
+  if (isOnchainMode && !onchainBattle) {
+    return (
+      <main className="mx-auto flex min-h-[60vh] max-w-[1440px] items-center justify-center px-4 py-16 md:px-8">
+        <div className="max-w-xl border-2 border-ink bg-white p-8 text-sm font-bold shadow-hard">
+          Battle #{id} was not found on-chain yet.
+        </div>
+      </main>
+    );
+  }
+
+  const battle = isOnchainMode
+    ? (onchainBattle as BattleDetails)
+    : buildDemoBattleDetails(seedBattle, demoStatus);
+  const submissions = isOnchainMode ? roomData?.submissions ?? [] : demoSubmissions;
   const status = battle.status;
-  const hasOnchainData = Boolean(roomData);
+  const hasOnchainData = Boolean(onchainBattle);
   const viewerHasVoted = roomData?.viewerHasVoted ?? demoVoteRecorded;
   const viewerTweetCount = roomData?.viewerTweetCount ?? 0;
   const owner = roomData?.owner ?? null;
@@ -220,9 +232,8 @@ export function BattleRoomPage() {
     totalVotes === 0 ? 50 : Math.round((challengerVotes / totalVotes) * 100);
   const code = buildBattleCode(id);
   const battleUrl =
-    typeof window === "undefined"
-      ? `https://tweetbattle402.xyz/battle/${id}`
-      : window.location.href;
+    typeof window === "undefined" ? buildBattleUrl(id) : window.location.href;
+  const canMoveToVoting = status === "Active" && battle.endTime <= Date.now();
   const challengeText = buildChallengeTweet({
     opponentHandle: battle.opponentHandle,
     topic: battle.topic,
@@ -261,9 +272,9 @@ export function BattleRoomPage() {
     }
   }
 
-  async function acceptBattle() {
-    const handle = acceptHandle.replace(/^@/, "");
-    if (!handle) {
+  async function acceptBattle(handle: string) {
+    const normalizedHandle = handle.replace(/^@/, "");
+    if (!normalizedHandle) {
       setNotice("Enter the opponent handle before accepting.");
       return;
     }
@@ -274,7 +285,7 @@ export function BattleRoomPage() {
         const hash = await writeContractAsync({
           ...tweetBattleArenaContract,
           functionName: "acceptBattle",
-          args: [BigInt(id), handle],
+          args: [BigInt(id), normalizedHandle],
           value: parseEther(battle.stakeAmount),
         });
         await publicClient.waitForTransactionReceipt({ hash });
@@ -600,21 +611,14 @@ export function BattleRoomPage() {
         </div>
       </div>
 
-      {tweetBattleArenaContract && isError && (
-        <div className="border-b-2 border-ink bg-white px-4 py-3 text-sm font-semibold md:px-8">
-          On-chain battle data could not be loaded, so the page is showing the
-          demo fallback for this id.
-        </div>
-      )}
-
       <div className="mx-auto grid max-w-[1440px] gap-8 px-4 py-10 md:px-8 xl:grid-cols-[1fr_390px]">
         <div className="space-y-8">
           {status === "PendingAcceptance" && (
             <PendingPanel
+              key={battleOpponentHandle}
               battle={battle}
               challengeText={challengeText}
-              opponentHandle={acceptHandle}
-              onOpponentHandleChange={setAcceptHandle}
+              defaultOpponentHandle={battleOpponentHandle}
               onAccept={acceptBattle}
               busy={working === "acceptBattle"}
             />
@@ -896,7 +900,7 @@ export function BattleRoomPage() {
                     ? "Scoring debate"
                     : "End arguments & run judge"}
                 </Button>
-                {status === "Active" && battle.endTime <= Date.now() && (
+                {canMoveToVoting && (
                   <Button
                     variant="dark"
                     className="mt-3 w-full"
@@ -986,19 +990,20 @@ function Player({
 function PendingPanel({
   battle,
   challengeText,
-  opponentHandle,
-  onOpponentHandleChange,
+  defaultOpponentHandle,
   onAccept,
   busy,
 }: {
   battle: BattleDetails;
   challengeText: string;
-  opponentHandle: string;
-  onOpponentHandleChange: (value: string) => void;
-  onAccept: () => void;
+  defaultOpponentHandle: string;
+  onAccept: (handle: string) => void;
   busy: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const [opponentHandle, setOpponentHandle] = useState(
+    () => defaultOpponentHandle,
+  );
   return (
     <Card className="overflow-hidden">
       <div className="grid lg:grid-cols-[1fr_340px]">
@@ -1055,12 +1060,12 @@ function PendingPanel({
           <Input
             className="mt-5"
             value={opponentHandle}
-            onChange={(event) => onOpponentHandleChange(event.target.value)}
+            onChange={(event) => setOpponentHandle(event.target.value)}
           />
           <Button
             variant="dark"
             className="mt-3 w-full"
-            onClick={onAccept}
+            onClick={() => onAccept(opponentHandle)}
             disabled={busy}
           >
             Accept battle <ArrowUpRight className="h-4 w-4" />

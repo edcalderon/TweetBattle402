@@ -77,8 +77,9 @@ export function CreateBattlePage() {
         return;
       } catch {
         setNotice(
-          "Wallet transaction was not completed. The local demo battle is still available.",
+          "Wallet transaction was not completed. No local fallback is used when the contract is configured.",
         );
+        return;
       }
     }
 

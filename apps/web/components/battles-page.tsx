@@ -34,18 +34,16 @@ export function BattlesPage() {
     enabled: Boolean(tweetBattleArenaContract && publicClient),
     refetchInterval: 20_000,
   });
-  const sourceBattles =
-    tweetBattleArenaContract && !isError ? onchainBattles ?? [] : demoBattles;
   const battles = useMemo(
     () =>
-      sourceBattles.filter(
+      (tweetBattleArenaContract ? onchainBattles ?? [] : demoBattles).filter(
         (battle) =>
           (filter === "All" || battle.status === filter) &&
           `${battle.topic} ${battle.challengerHandle} ${battle.opponentHandle}`
             .toLowerCase()
             .includes(query.toLowerCase()),
       ),
-    [filter, query, sourceBattles],
+    [filter, query, onchainBattles],
   );
 
   return (
@@ -73,8 +71,8 @@ export function BattlesPage() {
       </div>
       {tweetBattleArenaContract && isError && (
         <div className="mt-6 border-2 border-ember bg-white p-4 text-sm font-semibold">
-          On-chain battles could not be loaded from the Monad RPC, so the page
-          is showing the demo dataset instead.
+          On-chain battles could not be loaded from the Monad RPC. The page is
+          waiting for live contract data.
         </div>
       )}
       <div className="my-8 flex flex-wrap items-center gap-3">

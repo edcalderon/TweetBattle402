@@ -2,6 +2,11 @@ substitutions:
   _REGION: us-central1
   _SERVICE: tweetbattle402-web
   _IMAGE: gcr.io/$PROJECT_ID/tweetbattle402-web:$SHORT_SHA
+  _NEXT_PUBLIC_CHAIN_ID: "10143"
+  _NEXT_PUBLIC_MONAD_RPC_URL: "https://testnet-rpc.monad.xyz"
+  _NEXT_PUBLIC_CONTRACT_ADDRESS: "0x3B2Acbda1b05363d7a70ae040C816f6a8fA348C2"
+  _NEXT_PUBLIC_BASE_VOTE_PRICE: "0.01"
+  _NEXT_PUBLIC_APP_URL: "https://tweetbattle402.xyz"
 
 steps:
   - name: node:22-slim
@@ -17,6 +22,16 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - build
+      - --build-arg
+      - NEXT_PUBLIC_CHAIN_ID=$_NEXT_PUBLIC_CHAIN_ID
+      - --build-arg
+      - NEXT_PUBLIC_MONAD_RPC_URL=$_NEXT_PUBLIC_MONAD_RPC_URL
+      - --build-arg
+      - NEXT_PUBLIC_CONTRACT_ADDRESS=$_NEXT_PUBLIC_CONTRACT_ADDRESS
+      - --build-arg
+      - NEXT_PUBLIC_BASE_VOTE_PRICE=$_NEXT_PUBLIC_BASE_VOTE_PRICE
+      - --build-arg
+      - NEXT_PUBLIC_APP_URL=$_NEXT_PUBLIC_APP_URL
       - -t
       - $_IMAGE
       - .
@@ -38,6 +53,7 @@ steps:
       - --allow-unauthenticated
       - --image=$_IMAGE
       - --service-account=877960262099-compute@developer.gserviceaccount.com
+      - --set-env-vars=NEXT_PUBLIC_CHAIN_ID=$_NEXT_PUBLIC_CHAIN_ID,NEXT_PUBLIC_MONAD_RPC_URL=$_NEXT_PUBLIC_MONAD_RPC_URL,NEXT_PUBLIC_CONTRACT_ADDRESS=$_NEXT_PUBLIC_CONTRACT_ADDRESS,NEXT_PUBLIC_BASE_VOTE_PRICE=$_NEXT_PUBLIC_BASE_VOTE_PRICE,NEXT_PUBLIC_APP_URL=$_NEXT_PUBLIC_APP_URL
       - --set-secrets=OPENAI_API_KEY=OPENAI_API_KEY:latest
 
 images:

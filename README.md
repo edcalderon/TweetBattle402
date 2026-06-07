@@ -50,7 +50,13 @@ Current deployment address: `0x3B2Acbda1b05363d7a70ae040C816f6a8fA348C2` on Mona
 - Cloud Run service: `tweetbattle402-web`
 - Custom domain: `tweetbattle402.xyz`
 - `cloudbuild.yaml` is ready for a `main`-branch trigger that builds the Docker image, runs workspace checks, and deploys the app to Cloud Run.
-- `OPENAI_API_KEY` is intended to live in Secret Manager and be injected into Cloud Run at runtime.
+- Public production env vars:
+  - `NEXT_PUBLIC_CHAIN_ID=10143`
+  - `NEXT_PUBLIC_MONAD_RPC_URL=https://testnet-rpc.monad.xyz`
+  - `NEXT_PUBLIC_CONTRACT_ADDRESS=0x3B2Acbda1b05363d7a70ae040C816f6a8fA348C2`
+  - `NEXT_PUBLIC_BASE_VOTE_PRICE=0.01`
+  - `NEXT_PUBLIC_APP_URL=https://tweetbattle402.xyz`
+- `OPENAI_API_KEY` should live in Secret Manager and be injected into Cloud Run at runtime.
 
 ## Trust and security assumptions
 
