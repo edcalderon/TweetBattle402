@@ -52,8 +52,8 @@ export const MONAD_TESTNET_CHAIN = defineChain({
   },
   blockExplorers: {
     default: {
-      name: "Monad Explorer",
-      url: "https://testnet.monadexplorer.com",
+      name: "Monad Vision",
+      url: "https://testnet.monadvision.com",
     },
   },
   testnet: true,
@@ -119,6 +119,22 @@ export function buildChallengeTweet(input: {
 }) {
   const opponent = input.opponentHandle.replace(/^@/, "");
   return `@${opponent}, stake your words.\n\nTopic: ${input.topic}\nStake: ${input.stake} MON each\nFormat: ${input.tweets} tweet${input.tweets === 1 ? "" : "s"} per side\n\nAccept: ${input.battleUrl}\n#${buildBattleCode(input.battleId)} #TweetBattle402 #Monad`;
+}
+
+export function buildExplorerLink(type: 'address' | 'tx', value: string) {
+  const baseUrl = MONAD_TESTNET_CHAIN.blockExplorers?.default?.url ?? "https://testnet.monadvision.com";
+  switch (type) {
+    case 'address':
+      return `${baseUrl}/address/${value}`;
+    case 'tx':
+      return `${baseUrl}/tx/${value}`;
+  }
+}
+
+export function buildContractExplorerLink() {
+  const { CONTRACT_ADDRESSES } = require("./generated/addresses");
+  const contractAddress = CONTRACT_ADDRESSES[MONAD_TESTNET_CHAIN.id];
+  return contractAddress ? buildExplorerLink('address', contractAddress) : null;
 }
 
 export { CONTRACT_ADDRESSES } from "./generated/addresses";

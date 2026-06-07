@@ -32,8 +32,11 @@ import {
   buildBattleCode,
   buildChallengeTweet,
   buildBattleUrl,
+  buildExplorerLink,
   computeQuadraticVoteCost,
+  CONTRACT_ADDRESSES,
   generateXIntentUrl,
+  MONAD_TESTNET_CHAIN,
   validateTweetUrl,
   voteCostWei,
   type Battle,
@@ -957,6 +960,39 @@ export function BattleRoomPage() {
           {notice}
         </div>
       )}
+
+      <footer className="border-t-2 border-ink bg-white px-4 py-6 md:px-8">
+        <div className="mx-auto max-w-[1440px] flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <div className="text-xs font-black uppercase tracking-[0.2em] text-black/50">
+              Contract Address
+            </div>
+            {tweetBattleArenaContract && (
+              <a
+                href={buildExplorerLink(
+                  "address",
+                  CONTRACT_ADDRESSES[MONAD_TESTNET_CHAIN.id] ?? "",
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 inline-flex items-center gap-2 font-mono text-xs font-semibold text-mon hover:text-ember"
+              >
+                {CONTRACT_ADDRESSES[MONAD_TESTNET_CHAIN.id]}
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
+          </div>
+          <a
+            href={MONAD_TESTNET_CHAIN.blockExplorers?.default?.url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-black/50 hover:text-ink"
+          >
+            {MONAD_TESTNET_CHAIN.blockExplorers?.default?.name}{" "}
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
+      </footer>
     </main>
   );
 }
