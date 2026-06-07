@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { generateDebateAssist, type AssistantTool } from "@tweetbattle402/ai";
+import {
+  generateDebateAssistWithOpenAI,
+  type AssistantTool,
+} from "@tweetbattle402/ai";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {
@@ -8,9 +11,9 @@ export async function POST(request: Request) {
     position?: string;
     opponentPoint?: string;
   };
+  const result = await generateDebateAssistWithOpenAI(body);
   return NextResponse.json({
-    text: generateDebateAssist(body),
-    mode: process.env.OPENAI_API_KEY ? "llm-ready" : "deterministic-mock",
+    ...result,
     payment: "x402-roadmap",
   });
 }

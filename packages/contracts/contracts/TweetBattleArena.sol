@@ -86,6 +86,9 @@ contract TweetBattleArena is Ownable, Pausable, ReentrancyGuard {
     error TooEarly();
     error AlreadyVoted();
     error SubmissionLimitReached();
+    error BattleNotActive();
+    error DeadlinePassed();
+    error NotEnoughTime();
 
     constructor(address initialResolver) Ownable(msg.sender) {
         resolver = initialResolver == address(0) ? msg.sender : initialResolver;
@@ -159,8 +162,11 @@ contract TweetBattleArena is Ownable, Pausable, ReentrancyGuard {
         string calldata tweetUrl
     ) external whenNotPaused battleExists(battleId) {
         Battle storage battle = battles[battleId];
-        if (battle.status != BattleStatus.Active || block.timestamp > battle.endTime) {
-            revert InvalidState();
+        if (battle.status != BattleStatus.Active) {
+            revert BattleNotActive();
+        }
+        if (block.timestamp > battle.endTime) {
+            revert DeadlinePassed();
         }
         if (msg.sender != battle.challenger && msg.sender != battle.opponentWallet) {
             revert NotPlayer();
@@ -203,7 +209,7 @@ contract TweetBattleArena is Ownable, Pausable, ReentrancyGuard {
     function moveToVoting(uint256 battleId) external battleExists(battleId) {
         Battle storage battle = battles[battleId];
         if (battle.status != BattleStatus.Active) revert InvalidState();
-        if (block.timestamp < battle.endTime) revert TooEarly();
+        if (block.timestamp < battle.endTime) revert NotEnoughTime();
         battle.status = BattleStatus.Voting;
         battle.votingEndTime = uint64(block.timestamp + battle.votingDuration);
         emit BattleMovedToVoting(battleId, battle.votingEndTime);

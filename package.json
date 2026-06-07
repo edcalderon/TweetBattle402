@@ -1,10 +1,13 @@
 {
   "name": "tweetbattle402",
+  "version": "1.0.1",
   "private": true,
   "packageManager": "pnpm@10.28.2",
   "scripts": {
     "dev": "turbo dev --filter=@tweetbattle402/web",
     "build": "turbo build",
+    "gcp-build": "npm --prefix apps/web run build",
+    "start": "npm --prefix apps/web run start",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "contracts:compile": "pnpm --filter @tweetbattle402/contracts compile",

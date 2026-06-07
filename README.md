@@ -33,7 +33,7 @@ pnpm contracts:deploy
 
 Deployment requires testnet MON and `RESOLVER_PRIVATE_KEY`. The deploy script writes the artifact and deployment metadata into `packages/shared/src/generated`.
 
-Current deployment address: **Not deployed**. No funded resolver key was available in this workspace. Set `RESOLVER_PRIVATE_KEY` and run the deploy command to publish to Monad testnet.
+Current deployment address: `0x3B2Acbda1b05363d7a70ae040C816f6a8fA348C2` on Monad testnet.
 
 ## Demo script
 
@@ -44,6 +44,13 @@ Current deployment address: **Not deployed**. No funded resolver key was availab
 5. Buy quadratic voting power and inspect the live community split.
 6. Run the deterministic AI judge, finalize the demo result, and reveal claim state.
 7. Use battle `#399` for an already-finalized result.
+
+## Production deployment
+
+- Cloud Run service: `tweetbattle402-web`
+- Custom domain: `tweetbattle402.xyz`
+- `cloudbuild.yaml` is ready for a `main`-branch trigger that builds the Docker image, runs workspace checks, and deploys the app to Cloud Run.
+- `OPENAI_API_KEY` is intended to live in Secret Manager and be injected into Cloud Run at runtime.
 
 ## Trust and security assumptions
 

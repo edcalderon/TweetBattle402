@@ -1,0 +1,48 @@
+substitutions:
+  _REGION: us-central1
+  _SERVICE: tweetbattle402-web
+  _IMAGE: gcr.io/$PROJECT_ID/tweetbattle402-web:$SHORT_SHA
+
+steps:
+  - name: node:22-slim
+    entrypoint: bash
+    args:
+      - -lc
+      - |
+        corepack enable
+        pnpm install --frozen-lockfile
+        pnpm lint
+        pnpm typecheck
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - $_IMAGE
+      - .
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - $_IMAGE
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - $_SERVICE
+      - --project=$PROJECT_ID
+      - --region=$_REGION
+      - --platform=managed
+      - --allow-unauthenticated
+      - --image=$_IMAGE
+      - --service-account=877960262099-compute@developer.gserviceaccount.com
+      - --set-secrets=OPENAI_API_KEY=OPENAI_API_KEY:latest
+
+images:
+  - $_IMAGE
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitution_option: ALLOW_LOOSE

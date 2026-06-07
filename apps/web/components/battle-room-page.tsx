@@ -300,6 +300,40 @@ export function BattleRoomPage() {
 
     if (tweetBattleArenaContract && publicClient) {
       setWorking("submitTweet");
+      setUrlError("");
+
+      // Validate battle state before submitting
+      if (status !== "Active") {
+        setUrlError(`Battle is ${status.toLowerCase()}, tweets can only be submitted during Active phase.`);
+        setWorking("");
+        return;
+      }
+
+      if (Date.now() > battle.endTime) {
+        setUrlError("The submission deadline has passed.");
+        setWorking("");
+        return;
+      }
+
+      if (!address) {
+        setUrlError("Connect your wallet to submit.");
+        setWorking("");
+        return;
+      }
+
+      if (!isAddressEqual(address, battle.challengerWallet ?? zeroAddress) &&
+          !isAddressEqual(address, battle.opponentWallet ?? zeroAddress)) {
+        setUrlError("You are not a player in this battle.");
+        setWorking("");
+        return;
+      }
+
+      if (viewerTweetCount >= battle.tweetsPerPlayer) {
+        setUrlError(`You have reached the submission limit (${battle.tweetsPerPlayer} tweets).`);
+        setWorking("");
+        return;
+      }
+
       try {
         const hash = await writeContractAsync({
           ...tweetBattleArenaContract,
@@ -311,8 +345,23 @@ export function BattleRoomPage() {
         setTweetUrl("");
         setUrlError("");
         await refetch();
-      } catch {
-        setNotice("Tweet submission failed.");
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : "Tweet submission failed";
+        if (errorMsg.includes("user rejected")) {
+          setUrlError("Transaction was cancelled.");
+        } else if (errorMsg.includes("BattleNotActive")) {
+          setUrlError(`Battle is ${status.toLowerCase()}. Tweets can only be submitted during the Active phase.`);
+        } else if (errorMsg.includes("DeadlinePassed")) {
+          setUrlError("The submission deadline has passed. The battle can now move to voting.");
+        } else if (errorMsg.includes("NotPlayer")) {
+          setUrlError("You are not a player in this battle.");
+        } else if (errorMsg.includes("SubmissionLimitReached")) {
+          setUrlError(`You have reached the submission limit (${battle.tweetsPerPlayer} tweets).`);
+        } else if (errorMsg.includes("InvalidValue")) {
+          setUrlError("Tweet URL cannot be empty.");
+        } else {
+          setUrlError(`Submission failed: ${errorMsg.slice(0, 100)}`);
+        }
       } finally {
         setWorking("");
       }

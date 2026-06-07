@@ -1,0 +1,16 @@
+.git
+.next
+.turbo
+.env
+.env.*
+*.tsbuildinfo
+artifacts
+cache
+coverage
+dist
+node_modules
+packages/contracts/artifacts
+packages/contracts/cache
+packages/contracts/typechain-types
+tempo
+config/gcloud-private.json
