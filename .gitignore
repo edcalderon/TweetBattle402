@@ -1,6 +1,7 @@
 node_modules
 .next
 dist
+*.tsbuildinfo
 artifacts
 cache
 coverage
@@ -14,3 +15,4 @@ tempo/.tempo/
 tempo/node_modules/
 tempo/dist/
 config/gcloud-private.json
+gha-creds-*.json

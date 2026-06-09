@@ -109,72 +109,37 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
 
       {children}
 
-      <footer className="border-t-2 border-ink bg-ink px-4 py-10 text-paper md:px-8">
+      <footer className="border-t-2 border-ink bg-ink px-4 py-6 text-paper md:px-8 md:py-7">
         <div className="mx-auto max-w-[1440px]">
-          <div className="grid gap-8 lg:grid-cols-[1.05fr_.95fr]">
-            <div>
-              <div className="font-serif text-3xl font-bold italic md:text-4xl">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-xl">
+              <div className="font-serif text-2xl font-bold italic md:text-3xl">
                 Stake your words.
               </div>
-              <p className="mt-3 max-w-lg text-sm leading-relaxed text-paper/55">
-                X is the public arena. Monad is the escrow, voting, reward,
-                and reputation layer. No X API required.
+              <p className="mt-2 max-w-lg text-xs leading-relaxed text-paper/55 md:text-sm">
+                X is the public arena. Monad handles escrow, voting, rewards,
+                and reputation.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-paper/45">
-                <span className="rounded-full border border-paper/15 px-3 py-1">
-                  MVP
-                </span>
-                <span className="rounded-full border border-paper/15 px-3 py-1">
-                  Monad Testnet
-                </span>
-                <span className="rounded-full border border-paper/15 px-3 py-1">
-                  Trusted Resolver
-                </span>
-              </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="border border-paper/10 bg-paper/5 p-4 sm:p-5">
-                <div className="text-xs font-black uppercase tracking-[0.2em] text-paper/45">
-                  Network & Contract
-                </div>
-                <div className="mt-4 text-sm font-bold text-paper">
-                  {MONAD_TESTNET_CHAIN.name}
-                </div>
-                <div className="mt-2 font-mono text-[11px] leading-relaxed text-paper/55 break-all">
-                  {contractDisplay ?? "Contract address unavailable"}
-                </div>
-              </div>
-
-              <div className="border border-paper/10 bg-paper/5 p-4 sm:p-5">
-                <div className="text-xs font-black uppercase tracking-[0.2em] text-paper/45">
-                  Release
-                </div>
-                <div className="mt-4 text-sm font-bold text-paper">
-                  v{appVersion}
-                </div>
-                <p className="mt-2 text-xs leading-relaxed text-paper/55">
-                  Synced across the workspace and Cloud Build image tag.
-                </p>
-              </div>
-
-              <div className="border border-paper/10 bg-paper/5 p-4 sm:col-span-2 sm:p-5">
-                <div className="text-xs font-black uppercase tracking-[0.2em] text-paper/45">
-                  Explorer
-                </div>
-                <a
-                  href={explorerUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-paper transition-colors hover:text-acid"
-                >
-                  {explorerName}
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-                <p className="mt-2 text-xs leading-relaxed text-paper/55">
-                  Inspect Monad transactions, contracts, and battle activity.
-                </p>
-              </div>
+            <div className="flex flex-col gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-paper/45 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:max-w-2xl">
+              <span>{MONAD_TESTNET_CHAIN.name}</span>
+              <span className="hidden text-paper/20 sm:inline">•</span>
+              <span className="text-paper/65">v{appVersion}</span>
+              <span className="hidden text-paper/20 sm:inline">•</span>
+              <span className="font-mono normal-case tracking-normal text-paper/60">
+                {contractDisplay ?? "Contract address unavailable"}
+              </span>
+              <span className="hidden text-paper/20 sm:inline">•</span>
+              <a
+                href={explorerUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-paper/80 transition-colors hover:text-acid"
+              >
+                {explorerName}
+                <ExternalLink className="h-3 w-3" />
+              </a>
             </div>
           </div>
         </div>

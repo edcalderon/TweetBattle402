@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.3] - 2026-06-08
+
+### Added
+- Add a GitHub Actions workflow that monitors Cloud Build with GitHub OIDC and no stored GCP JSON key.
+
+### Changed
+- Simplify the footer into a compact desktop/mobile strip with a single Monad Testnet Explorer link.
+- Bump the workspace release version and Cloud Build image tag to `1.0.3`.
+
 ## [1.0.2] - 2026-06-08
 
 ### Fixed

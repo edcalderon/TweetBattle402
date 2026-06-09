@@ -1,7 +1,7 @@
 substitutions:
   _REGION: us-central1
   _SERVICE: tweetbattle402-web
-  _IMAGE: us-central1-docker.pkg.dev/tweetbattle402/cloud-run-source-deploy/tweetbattle402-web:1.0.2
+  _IMAGE: us-central1-docker.pkg.dev/tweetbattle402/cloud-run-source-deploy/tweetbattle402-web:1.0.3
   _NEXT_PUBLIC_CHAIN_ID: "10143"
   _NEXT_PUBLIC_MONAD_RPC_URL: "https://testnet-rpc.monad.xyz"
   _NEXT_PUBLIC_CONTRACT_ADDRESS: "0x3B2Acbda1b05363d7a70ae040C816f6a8fA348C2"

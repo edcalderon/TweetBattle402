@@ -2,7 +2,7 @@
 
 > TweetBattle402 turns X debates into stake-backed battles. Anyone can challenge a user to a topic-based tweet duel, both sides escrow MON, each side posts a fixed number of tweets, the community votes with quadratic voting, an AI judge scores argument quality, and the winner claims the pool. X is the public arena; Monad is the escrow, voting, reward, and reputation layer. No X API required.
 
-Current release: `1.0.2`. The landing and battles views now fall back to demo data when Monad RPC requests fail, and the landing footer shows the app version.
+Current release: `1.0.3`. The landing and battles views now fall back to demo data when Monad RPC requests fail, the landing footer is a compact desktop/mobile strip, and GitHub Actions can monitor Cloud Build without a stored GCP JSON key.
 
 ## Workspace
 
@@ -15,7 +15,7 @@ packages/ai/          Judge prompt, mock judge, and debate assistant tools
 
 ## Release and versioning
 
-- Root release version: `1.0.2`
+- Root release version: `1.0.3`
 - Versioning config: [`versioning.config.json`](./versioning.config.json)
 - Changelog: [`CHANGELOG.md`](./CHANGELOG.md)
 - Releases keep the root package and workspace package versions in sync, and the Cloud Build image tag follows the same release version.
@@ -69,6 +69,19 @@ Current deployment address: `0x3B2Acbda1b05363d7a70ae040C816f6a8fA348C2` on Mona
   - `NEXT_PUBLIC_BASE_VOTE_PRICE=0.01`
   - `NEXT_PUBLIC_APP_URL=https://tweetbattle402.xyz`
 - `OPENAI_API_KEY` should live in Secret Manager and be injected into Cloud Run at runtime.
+
+## Cloud Build monitoring
+
+The workflow in [`.github/workflows/monitor-cloud-build.yml`](./.github/workflows/monitor-cloud-build.yml) watches Cloud Build status from GitHub Actions using Workload Identity Federation.
+
+Configure these repository variables so the workflow can authenticate without a JSON key:
+
+- `GCP_PROJECT_ID`
+- `GCP_WORKLOAD_IDENTITY_PROVIDER`
+- `GCP_SERVICE_ACCOUNT_EMAIL`
+- `GCP_REGION` if you need something other than the default `us-central1`
+
+The workflow looks up the most recent Cloud Build for the commit SHA, waits for it to finish, and fails the check if the build does not succeed.
 
 ## Trust and security assumptions
 
