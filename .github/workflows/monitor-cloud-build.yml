@@ -62,6 +62,15 @@ jobs:
         run: |
           set -euo pipefail
 
+          build_value() {
+            local field="$1"
+
+            gcloud builds describe "$build_id" \
+              --project="$GCP_PROJECT_ID" \
+              --region="$GCP_REGION" \
+              --format="value(${field})"
+          }
+
           find_build_id() {
             local provenance_filter="$1"
 
@@ -94,18 +103,40 @@ jobs:
             exit 1
           fi
 
-          log_url="$(gcloud builds describe "$build_id" \
+          log_url="$(build_value logUrl)"
+          image_ref="$(build_value substitutions._IMAGE)"
+          app_url="$(build_value substitutions._NEXT_PUBLIC_APP_URL)"
+          service_name="$(build_value substitutions._SERVICE)"
+          service_url="$(gcloud run services describe "${service_name:-tweetbattle402-web}" \
             --project="$GCP_PROJECT_ID" \
             --region="$GCP_REGION" \
-            --format="value(logUrl)")"
+            --format="value(status.url)")"
+
+          if [ -z "$app_url" ]; then
+            app_url="https://tweetbattle402.xyz"
+          fi
+
+          if [ -z "$service_url" ]; then
+            service_url="$app_url"
+          fi
+
+          release_version="${image_ref##*:}"
 
           echo "Monitoring Cloud Build ${build_id}"
           echo "build_id=$build_id" >> "$GITHUB_OUTPUT"
-          echo "### Cloud Build monitor" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Release check" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Commit SHA: \`${TARGET_COMMIT_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Build ID: \`${build_id}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Logs: ${log_url}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Checking release version \`${release_version}\` for [${app_url}](${app_url})." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Commit | \`${TARGET_COMMIT_SHA}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Build ID | \`${build_id}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Version checked | \`${release_version}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Web link | [Open site](${app_url}) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Cloud Run URL | [Open service URL](${service_url}) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Build log | [Open Cloud Build](${log_url}) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Current state | \`Monitoring\` |" >> "$GITHUB_STEP_SUMMARY"
 
           while true; do
             status="$(gcloud builds describe "$build_id" \
@@ -120,12 +151,12 @@ jobs:
                 ;;
               SUCCESS)
                 echo "Cloud Build ${build_id} succeeded"
-                echo "- Status: \`$status\`" >> "$GITHUB_STEP_SUMMARY"
+                echo "| Final status | \`$status\` |" >> "$GITHUB_STEP_SUMMARY"
                 break
                 ;;
               FAILURE|CANCELLED|TIMEOUT|EXPIRED|INTERNAL_ERROR)
                 echo "::error::Cloud Build ${build_id} finished with status ${status}"
-                echo "- Status: \`$status\`" >> "$GITHUB_STEP_SUMMARY"
+                echo "| Final status | \`$status\` |" >> "$GITHUB_STEP_SUMMARY"
                 exit 1
                 ;;
               *)
