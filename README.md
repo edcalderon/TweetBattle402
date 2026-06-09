@@ -73,15 +73,14 @@ Current deployment address: `0x3B2Acbda1b05363d7a70ae040C816f6a8fA348C2` on Mona
 ## Cloud Build monitoring
 
 The workflow in [`.github/workflows/monitor-cloud-build.yml`](./.github/workflows/monitor-cloud-build.yml) watches Cloud Build status from GitHub Actions using Workload Identity Federation.
-The companion workflow in [`.github/workflows/seed-github-vars.yml`](./.github/workflows/seed-github-vars.yml) seeds the repository variables on `main` so the monitor workflow can keep using GitHub-side config without a JSON key.
-
-Configure these repository variables so the workflow can authenticate without a JSON key:
+Configure these repository variables in GitHub so the workflow can authenticate without a JSON key:
 
 - `GCP_PROJECT_ID`
 - `GCP_WORKLOAD_IDENTITY_PROVIDER`
 - `GCP_SERVICE_ACCOUNT_EMAIL`
 - `GCP_REGION` if you need something other than the default `us-central1`
 
+The workflow also keeps safe defaults in the YAML so it can still run if a variable is missing.
 The workflow looks up the most recent Cloud Build for the commit SHA, waits for it to finish, and fails the check if the build does not succeed.
 
 ## Trust and security assumptions
