@@ -2,6 +2,8 @@
 
 > TweetBattle402 turns X debates into stake-backed battles. Anyone can challenge a user to a topic-based tweet duel, both sides escrow MON, each side posts a fixed number of tweets, the community votes with quadratic voting, an AI judge scores argument quality, and the winner claims the pool. X is the public arena; Monad is the escrow, voting, reward, and reputation layer. No X API required.
 
+Current release: `1.0.2`. The landing and battles views now fall back to demo data when Monad RPC requests fail, and the landing footer shows the app version.
+
 ## Workspace
 
 ```text
@@ -10,6 +12,16 @@ packages/contracts/   Hardhat project with TweetBattleArena.sol
 packages/shared/      Types, ABI, chain config, vote math, and X helpers
 packages/ai/          Judge prompt, mock judge, and debate assistant tools
 ```
+
+## Release and versioning
+
+- Root release version: `1.0.2`
+- Versioning config: [`versioning.config.json`](./versioning.config.json)
+- Changelog: [`CHANGELOG.md`](./CHANGELOG.md)
+- Releases keep the root package and workspace package versions in sync, and the Cloud Build image tag follows the same release version.
+- Useful commands:
+  - `pnpm exec versioning validate`
+  - `pnpm exec versioning patch`
 
 ## Run locally
 
