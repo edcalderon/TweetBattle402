@@ -14,6 +14,10 @@ import {
   parseBattleCreatedIdFromReceipt,
   tweetBattleArenaContract,
 } from "@/lib/onchain";
+import {
+  buildStoredBattleDraft,
+  writeStoredBattle,
+} from "@/lib/battle-storage";
 
 const fieldLabel =
   "mb-2 block text-[11px] font-black uppercase tracking-[0.16em]";
@@ -49,6 +53,16 @@ export function CreateBattlePage() {
     setNotice("");
     const challengerHandle = form.challengerHandle.replace(/^@/, "") || "you";
     const opponentHandle = form.opponentHandle.replace(/^@/, "");
+    const draftBattle = {
+      challenger: "Connected wallet",
+      challengerHandle,
+      opponentHandle,
+      topic: form.topic,
+      stakeAmount: form.stake,
+      tweetsPerPlayer: Number(form.tweets) as 1 | 2 | 3,
+      endTime: Date.now() + Number(form.duration) * 1000,
+      aiWeightBps: Number(form.aiWeight) * 100,
+    };
 
     if (tweetBattleArenaContract && isConnected && publicClient) {
       try {
@@ -73,6 +87,12 @@ export function CreateBattlePage() {
             "Could not read the created battle id from the transaction receipt.",
           );
         }
+        writeStoredBattle(
+          buildStoredBattleDraft({
+            id: battleId,
+            ...draftBattle,
+          }),
+        );
         router.push(`/battle/${battleId}`);
         return;
       } catch {
@@ -84,24 +104,12 @@ export function CreateBattlePage() {
     }
 
     const battleId = Math.floor(500 + Math.random() * 400);
-    const battle = {
-      id: battleId,
-      challenger: "Connected wallet",
-      opponent: "",
-      challengerHandle,
-      opponentHandle,
-      topic: form.topic,
-      stakeAmount: form.stake,
-      tweetsPerPlayer: Number(form.tweets),
-      status: "PendingAcceptance",
-      endTime: Date.now() + Number(form.duration) * 1000,
-      votingEndTime: 0,
-      aiWeightBps: Number(form.aiWeight) * 100,
-      challengerVotePower: 0,
-      opponentVotePower: 0,
-      votePool: "0",
-    };
-    localStorage.setItem(`tb402:battle:${battleId}`, JSON.stringify(battle));
+    writeStoredBattle(
+      buildStoredBattleDraft({
+        id: battleId,
+        ...draftBattle,
+      }),
+    );
     router.push(`/battle/${battleId}`);
   }
 
@@ -123,7 +131,7 @@ export function CreateBattlePage() {
         </div>
       </div>
 
-      <form onSubmit={submit} className="grid gap-7 lg:grid-cols-[1fr_360px]">
+      <form onSubmit={submit} className="grid gap-7 lg:grid-cols-[1fr_360px] lg:[&>*:first-child]:order-1 lg:[&>*:last-child]:order-2">
         <Card>
           <CardHeader>
             <h2 className="display text-4xl font-black">

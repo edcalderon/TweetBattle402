@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   ArrowUpRight,
@@ -50,6 +50,10 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { demoBattles, demoTweets } from "@/lib/demo-data";
+import {
+  readStoredBattle,
+  selectBattleSeed,
+} from "@/lib/battle-storage";
 import {
   fetchBattleRoomData,
   tweetBattleArenaContract,
@@ -127,13 +131,14 @@ export function BattleRoomPage() {
   const params = useParams<{ id: string }>();
   const parsedId = Number(params.id ?? 402);
   const id = Number.isFinite(parsedId) && parsedId > 0 ? parsedId : 402;
-  const seedBattle = demoBattles.find((item) => item.id === id) ?? demoBattles[0];
-
+  const initialSeedBattle = selectBattleSeed(id, null, demoBattles);
+  const [storedBattle, setStoredBattle] = useState<Battle | null>(null);
+  const [storageLoaded, setStorageLoaded] = useState(false);
   const [demoStatus, setDemoStatus] = useState<BattleStatusName>(
-    () => seedBattle.status,
+    () => initialSeedBattle?.status ?? "PendingAcceptance",
   );
   const [demoSubmissions, setDemoSubmissions] = useState<BattleSubmission[]>(
-    () => buildDemoSubmissions(seedBattle.id),
+    () => (initialSeedBattle ? buildDemoSubmissions(initialSeedBattle.id) : []),
   );
   const [tweetType, setTweetType] = useState<TweetType>("Counterargument");
   const [draft, setDraft] = useState("");
@@ -144,7 +149,7 @@ export function BattleRoomPage() {
   const [demoVoteRecorded, setDemoVoteRecorded] = useState(false);
   const [aiResult, setAiResult] = useState<JudgeResult | null>(
     () =>
-      seedBattle.status === "Finalized"
+      initialSeedBattle?.status === "Finalized"
         ? {
             challengerScore: 7180,
             opponentScore: 8430,
@@ -163,14 +168,44 @@ export function BattleRoomPage() {
     queryKey: ["tweetbattle402", "battle", id, address],
     queryFn: () => fetchBattleRoomData(publicClient, id, address),
     enabled: Boolean(tweetBattleArenaContract && publicClient && id > 0),
-    refetchInterval: 20_000,
+    retry: false,
+    refetchInterval: (query) => (query.state.data ? 20_000 : false),
   });
-  const isOnchainMode = Boolean(tweetBattleArenaContract);
-  const onchainBattle = roomData?.battle ?? null;
-  const battleOpponentHandle =
-    onchainBattle?.opponentHandle ?? seedBattle.opponentHandle;
+  useEffect(() => {
+    setStorageLoaded(false);
+    setStoredBattle(readStoredBattle(id));
+    setStorageLoaded(true);
+  }, [id]);
 
-  if (isOnchainMode && isLoading) {
+  const seedBattle = selectBattleSeed(id, storedBattle, demoBattles);
+  const liveBattle = roomData?.battle ?? null;
+  const battle = liveBattle
+    ? (liveBattle as BattleDetails)
+    : seedBattle
+      ? buildDemoBattleDetails(seedBattle, demoStatus)
+      : null;
+  const isLiveMode = Boolean(liveBattle);
+  const battleOpponentHandle =
+    liveBattle?.opponentHandle ?? seedBattle?.opponentHandle ?? "";
+
+  useEffect(() => {
+    if (!seedBattle) return;
+    setDemoStatus(seedBattle.status);
+    setDemoSubmissions(buildDemoSubmissions(seedBattle.id));
+    setDemoVoteRecorded(false);
+    setAiResult(
+      seedBattle.status === "Finalized"
+        ? {
+            challengerScore: 7180,
+            opponentScore: 8430,
+            reasoning:
+              "The opponent made the more coherent causal case and answered the strongest counterargument directly.",
+          }
+        : null,
+    );
+  }, [seedBattle?.id]);
+
+  if (tweetBattleArenaContract && isLoading && !battle && !storageLoaded) {
     return (
       <main className="mx-auto flex min-h-[60vh] max-w-[1440px] items-center justify-center px-4 py-16 md:px-8">
         <div className="border-2 border-ink bg-white p-8 text-sm font-bold shadow-hard">
@@ -180,18 +215,17 @@ export function BattleRoomPage() {
     );
   }
 
-  if (isOnchainMode && isError) {
+  if (tweetBattleArenaContract && isError && !battle && storageLoaded) {
     return (
       <main className="mx-auto flex min-h-[60vh] max-w-[1440px] items-center justify-center px-4 py-16 md:px-8">
         <div className="max-w-xl border-2 border-ember bg-white p-8 text-sm font-bold shadow-hard">
-          On-chain battle data could not be loaded from Monad RPC. The page is
-          waiting on live contract data instead of a demo fallback.
+          On-chain battle data could not be loaded from Monad RPC.
         </div>
       </main>
     );
   }
 
-  if (isOnchainMode && !onchainBattle) {
+  if (tweetBattleArenaContract && !liveBattle && !battle && !isLoading && storageLoaded) {
     return (
       <main className="mx-auto flex min-h-[60vh] max-w-[1440px] items-center justify-center px-4 py-16 md:px-8">
         <div className="max-w-xl border-2 border-ink bg-white p-8 text-sm font-bold shadow-hard">
@@ -201,12 +235,20 @@ export function BattleRoomPage() {
     );
   }
 
-  const battle = isOnchainMode
-    ? (onchainBattle as BattleDetails)
-    : buildDemoBattleDetails(seedBattle, demoStatus);
-  const submissions = isOnchainMode ? roomData?.submissions ?? [] : demoSubmissions;
-  const status = battle.status;
-  const hasOnchainData = Boolean(onchainBattle);
+  if (!battle) {
+    return (
+      <main className="mx-auto flex min-h-[60vh] max-w-[1440px] items-center justify-center px-4 py-16 md:px-8">
+        <div className="border-2 border-dashed border-ink bg-white p-8 text-sm font-bold shadow-hard">
+          Battle data is still loading.
+        </div>
+      </main>
+    );
+  }
+
+  const activeBattle = battle as BattleDetails;
+  const submissions = isLiveMode ? roomData?.submissions ?? [] : demoSubmissions;
+  const status = activeBattle.status;
+  const hasOnchainData = isLiveMode;
   const viewerHasVoted = roomData?.viewerHasVoted ?? demoVoteRecorded;
   const viewerTweetCount = roomData?.viewerTweetCount ?? 0;
   const owner = roomData?.owner ?? null;
@@ -217,18 +259,18 @@ export function BattleRoomPage() {
   const canFinalize = status === "Voting" && Boolean(aiResult) && (hasOnchainData ? isAdmin : true);
   const canClaimReward =
     status === "Finalized" &&
-    !battle.rewardClaimed &&
+    !activeBattle.rewardClaimed &&
     (hasOnchainData
-      ? Boolean(address) && isAddressEqual(battle.winner, address ?? zeroAddress)
+      ? Boolean(address) && isAddressEqual(activeBattle.winner, address ?? zeroAddress)
       : true);
 
   const challengerVotes = hasOnchainData
-    ? battle.challengerVotePower
-    : battle.challengerVotePower +
+    ? activeBattle.challengerVotePower
+    : activeBattle.challengerVotePower +
       (demoVoteRecorded && voteSide === "challenger" ? votePower : 0);
   const opponentVotes = hasOnchainData
-    ? battle.opponentVotePower
-    : battle.opponentVotePower +
+    ? activeBattle.opponentVotePower
+    : activeBattle.opponentVotePower +
       (demoVoteRecorded && voteSide === "opponent" ? votePower : 0);
   const totalVotes = challengerVotes + opponentVotes;
   const challengerPercent =
@@ -236,23 +278,25 @@ export function BattleRoomPage() {
   const code = buildBattleCode(id);
   const battleUrl =
     typeof window === "undefined" ? buildBattleUrl(id) : window.location.href;
-  const canMoveToVoting = status === "Active" && battle.endTime <= Date.now();
+  const canMoveToVoting = status === "Active" && activeBattle.endTime <= Date.now();
   const challengeText = buildChallengeTweet({
-    opponentHandle: battle.opponentHandle,
-    topic: battle.topic,
-    stake: battle.stakeAmount,
-    tweets: battle.tweetsPerPlayer,
+    opponentHandle: activeBattle.opponentHandle,
+    topic: activeBattle.topic,
+    stake: activeBattle.stakeAmount,
+    tweets: activeBattle.tweetsPerPlayer,
     battleId: id,
     battleUrl,
   });
-  const generatedTweet = `${tweetType}: ${draft || `On "${battle.topic}", the key question is which claim survives contact with evidence and incentives.`}\n\n#${code} #TweetBattle402 #Monad`;
+  const generatedTweet = `${tweetType}: ${draft || `On "${activeBattle.topic}", the key question is which claim survives contact with evidence and incentives.`}\n\n#${code} #TweetBattle402 #Monad`;
   const countdownLabel =
     status === "Finalized"
       ? "Settlement final"
       : status === "PendingAcceptance"
         ? "Awaiting acceptance"
         : formatRemainingTime(
-            status === "Voting" ? battle.votingEndTime || battle.endTime : battle.endTime,
+            status === "Voting"
+              ? activeBattle.votingEndTime || activeBattle.endTime
+              : activeBattle.endTime,
           );
 
   async function assist(tool: string) {
@@ -261,7 +305,7 @@ export function BattleRoomPage() {
       const response = await fetch("/api/ai/assist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tool, topic: battle.topic, position: draft }),
+        body: JSON.stringify({ tool, topic: activeBattle.topic, position: draft }),
       });
       if (!response.ok) {
         throw new Error("AI assist request failed.");
@@ -282,14 +326,14 @@ export function BattleRoomPage() {
       return;
     }
 
-    if (tweetBattleArenaContract && publicClient) {
+    if (hasOnchainData && tweetBattleArenaContract && publicClient) {
       setWorking("acceptBattle");
       try {
         const hash = await writeContractAsync({
           ...tweetBattleArenaContract,
           functionName: "acceptBattle",
           args: [BigInt(id), normalizedHandle],
-          value: parseEther(battle.stakeAmount),
+          value: parseEther(activeBattle.stakeAmount),
         });
         await publicClient.waitForTransactionReceipt({ hash });
         setNotice("Battle accepted on-chain.");
@@ -312,7 +356,7 @@ export function BattleRoomPage() {
       return;
     }
 
-    if (tweetBattleArenaContract && publicClient) {
+    if (hasOnchainData && tweetBattleArenaContract && publicClient) {
       setWorking("submitTweet");
       setUrlError("");
 
@@ -323,7 +367,7 @@ export function BattleRoomPage() {
         return;
       }
 
-      if (Date.now() > battle.endTime) {
+      if (Date.now() > activeBattle.endTime) {
         setUrlError("The submission deadline has passed.");
         setWorking("");
         return;
@@ -335,15 +379,17 @@ export function BattleRoomPage() {
         return;
       }
 
-      if (!isAddressEqual(address, battle.challengerWallet ?? zeroAddress) &&
-          !isAddressEqual(address, battle.opponentWallet ?? zeroAddress)) {
+      if (
+        !isAddressEqual(address, activeBattle.challengerWallet ?? zeroAddress) &&
+        !isAddressEqual(address, activeBattle.opponentWallet ?? zeroAddress)
+      ) {
         setUrlError("You are not a player in this battle.");
         setWorking("");
         return;
       }
 
-      if (viewerTweetCount >= battle.tweetsPerPlayer) {
-        setUrlError(`You have reached the submission limit (${battle.tweetsPerPlayer} tweets).`);
+      if (viewerTweetCount >= activeBattle.tweetsPerPlayer) {
+        setUrlError(`You have reached the submission limit (${activeBattle.tweetsPerPlayer} tweets).`);
         setWorking("");
         return;
       }
@@ -370,7 +416,7 @@ export function BattleRoomPage() {
         } else if (errorMsg.includes("NotPlayer")) {
           setUrlError("You are not a player in this battle.");
         } else if (errorMsg.includes("SubmissionLimitReached")) {
-          setUrlError(`You have reached the submission limit (${battle.tweetsPerPlayer} tweets).`);
+          setUrlError(`You have reached the submission limit (${activeBattle.tweetsPerPlayer} tweets).`);
         } else if (errorMsg.includes("InvalidValue")) {
           setUrlError("Tweet URL cannot be empty.");
         } else {
@@ -387,7 +433,7 @@ export function BattleRoomPage() {
       {
         side: "challenger",
         type: tweetType,
-        handle: battle.challengerHandle,
+        handle: activeBattle.challengerHandle,
         text: draft || generatedTweet,
         url: tweetUrl,
         author: zeroAddress,
@@ -400,7 +446,7 @@ export function BattleRoomPage() {
   }
 
   async function voteBattle() {
-    if (tweetBattleArenaContract && publicClient) {
+    if (hasOnchainData && tweetBattleArenaContract && publicClient) {
       if (!isConnected) {
         setNotice("Connect a wallet to vote on-chain.");
         return;
@@ -429,7 +475,7 @@ export function BattleRoomPage() {
   }
 
   async function moveToVoting() {
-    if (tweetBattleArenaContract && publicClient) {
+    if (hasOnchainData && tweetBattleArenaContract && publicClient) {
       setWorking("moveToVoting");
       try {
         const hash = await writeContractAsync({
@@ -466,9 +512,9 @@ export function BattleRoomPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          topic: battle.topic,
-          challengerHandle: battle.challengerHandle,
-          opponentHandle: battle.opponentHandle,
+          topic: activeBattle.topic,
+          challengerHandle: activeBattle.challengerHandle,
+          opponentHandle: activeBattle.opponentHandle,
           challengerArguments: argumentsBySide.challenger,
           opponentArguments: argumentsBySide.opponent,
         }),
@@ -498,7 +544,7 @@ export function BattleRoomPage() {
       return;
     }
 
-    if (tweetBattleArenaContract && publicClient) {
+    if (hasOnchainData && tweetBattleArenaContract && publicClient) {
       if (!isAdmin) {
         setNotice("Only the owner or resolver wallet can finalize on-chain.");
         return;
@@ -531,7 +577,7 @@ export function BattleRoomPage() {
   }
 
   async function claimReward() {
-    if (tweetBattleArenaContract && publicClient) {
+    if (hasOnchainData && tweetBattleArenaContract && publicClient) {
       setWorking("claimReward");
       try {
         const hash = await writeContractAsync({
@@ -553,20 +599,29 @@ export function BattleRoomPage() {
     setNotice("Reward claims are only available on-chain.");
   }
 
-  const battlePool = (Number(battle.stakeAmount) * 2 + Number(battle.votePool)).toFixed(2);
+  const battlePool = (Number(activeBattle.stakeAmount) * 2 + Number(activeBattle.votePool)).toFixed(2);
   const activeWinner =
     status === "Finalized"
-      ? isAddressEqual(battle.winner, battle.challengerWallet)
+      ? isAddressEqual(activeBattle.winner, activeBattle.challengerWallet)
         ? "challenger"
         : "opponent"
       : null;
   const demoSubmissionLimitReached =
-    !hasOnchainData && demoSubmissions.length >= battle.tweetsPerPlayer * 2;
+    !hasOnchainData && demoSubmissions.length >= activeBattle.tweetsPerPlayer * 2;
+  const rpcFallbackMessage =
+    tweetBattleArenaContract && isError && !hasOnchainData
+      ? "On-chain battle data could not be loaded from Monad RPC. Showing the local battle copy instead."
+      : "";
 
   return (
     <main>
       <section className="border-b-2 border-ink bg-ink px-4 py-10 text-paper md:px-8">
         <div className="mx-auto max-w-[1440px]">
+          {rpcFallbackMessage && (
+            <div className="mb-5 max-w-3xl border-2 border-acid bg-acid px-4 py-3 text-[11px] font-black uppercase tracking-[0.14em] text-ink">
+              {rpcFallbackMessage}
+            </div>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Badge className="border-acid bg-acid text-ink">
@@ -582,11 +637,11 @@ export function BattleRoomPage() {
             </div>
           </div>
           <h1 className="display mt-8 max-w-5xl text-5xl font-black leading-[0.93] md:text-8xl">
-            {battle.topic}
+            {activeBattle.topic}
           </h1>
           <div className="mt-10 grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
             <Player
-              handle={battle.challengerHandle}
+              handle={activeBattle.challengerHandle}
               label="Challenger"
               align="left"
               active={activeWinner === "challenger"}
@@ -595,7 +650,7 @@ export function BattleRoomPage() {
               VS
             </div>
             <Player
-              handle={battle.opponentHandle}
+              handle={activeBattle.opponentHandle}
               label="Opponent"
               align="right"
               active={activeWinner === "opponent"}
@@ -606,11 +661,11 @@ export function BattleRoomPage() {
 
       <div className="border-b-2 border-ink bg-acid px-4 py-3 md:px-8">
         <div className="mx-auto flex max-w-[1440px] flex-wrap justify-between gap-3 text-[11px] font-black uppercase tracking-[0.13em]">
-          <span>Stake: {battle.stakeAmount} MON each</span>
-          <span>{battle.tweetsPerPlayer} tweets per player</span>
-          <span>{100 - battle.aiWeightBps / 100}% community</span>
-          <span>{battle.aiWeightBps / 100}% AI judge</span>
-          <span>Vote pool: {battle.votePool} MON</span>
+          <span>Stake: {activeBattle.stakeAmount} MON each</span>
+          <span>{activeBattle.tweetsPerPlayer} tweets per player</span>
+          <span>{100 - activeBattle.aiWeightBps / 100}% community</span>
+          <span>{activeBattle.aiWeightBps / 100}% AI judge</span>
+          <span>Vote pool: {activeBattle.votePool} MON</span>
         </div>
       </div>
 
@@ -619,7 +674,7 @@ export function BattleRoomPage() {
           {status === "PendingAcceptance" && (
             <PendingPanel
               key={battleOpponentHandle}
-              battle={battle}
+              battle={activeBattle}
               challengeText={challengeText}
               defaultOpponentHandle={battleOpponentHandle}
               onAccept={acceptBattle}
@@ -635,7 +690,7 @@ export function BattleRoomPage() {
                 <SectionTitle
                   eyebrow="The record"
                   title="Submitted arguments"
-                  aside={`${submissions.length}/${battle.tweetsPerPlayer * 2} tweets`}
+                  aside={`${submissions.length}/${activeBattle.tweetsPerPlayer * 2} tweets`}
                 />
                 <div className="grid gap-5 md:grid-cols-2">
                   {submissions.map((tweet, index) => (
@@ -729,7 +784,7 @@ export function BattleRoomPage() {
                           disabled={
                             working === "submitTweet" ||
                             (hasOnchainData &&
-                              viewerTweetCount >= battle.tweetsPerPlayer) ||
+                              viewerTweetCount >= activeBattle.tweetsPerPlayer) ||
                             demoSubmissionLimitReached
                           }
                         >
@@ -761,10 +816,10 @@ export function BattleRoomPage() {
                       <div>
                         <div className="mb-3 flex justify-between text-sm font-black">
                           <span>
-                            @{battle.challengerHandle} {challengerPercent}%
+                            @{activeBattle.challengerHandle} {challengerPercent}%
                           </span>
                           <span>
-                            {100 - challengerPercent}% @{battle.opponentHandle}
+                            {100 - challengerPercent}% @{activeBattle.opponentHandle}
                           </span>
                         </div>
                         <div className="flex h-7 border-2 border-ink bg-ember">
@@ -783,7 +838,7 @@ export function BattleRoomPage() {
                               Back challenger
                             </span>
                             <strong className="mt-2 block text-lg">
-                              @{battle.challengerHandle}
+                              @{activeBattle.challengerHandle}
                             </strong>
                           </button>
                           <button
@@ -795,7 +850,7 @@ export function BattleRoomPage() {
                               Back opponent
                             </span>
                             <strong className="mt-2 block text-lg">
-                              @{battle.opponentHandle}
+                              @{activeBattle.opponentHandle}
                             </strong>
                           </button>
                         </div>
@@ -840,7 +895,7 @@ export function BattleRoomPage() {
 
               {(status === "Voting" || status === "Finalized") && aiResult && (
               <ResultPanel
-                battle={battle}
+                battle={activeBattle}
                 aiResult={aiResult}
                 challengerPercent={challengerPercent}
                 finalized={status === "Finalized"}

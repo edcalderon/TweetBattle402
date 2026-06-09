@@ -16,6 +16,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* override Tailwind preflight's -webkit-text-size-adjust which Firefox rejects */
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {

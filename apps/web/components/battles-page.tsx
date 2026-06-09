@@ -32,18 +32,19 @@ export function BattlesPage() {
     queryKey: ["tweetbattle402", "battles"],
     queryFn: () => fetchBattles(publicClient),
     enabled: Boolean(tweetBattleArenaContract && publicClient),
-    refetchInterval: 20_000,
+    retry: false,
+    refetchInterval: (query) => (query.state.data ? 20_000 : false),
   });
   const battles = useMemo(
     () =>
-      (tweetBattleArenaContract ? onchainBattles ?? [] : demoBattles).filter(
+      (tweetBattleArenaContract && !isError ? onchainBattles ?? [] : demoBattles).filter(
         (battle) =>
           (filter === "All" || battle.status === filter) &&
           `${battle.topic} ${battle.challengerHandle} ${battle.opponentHandle}`
             .toLowerCase()
             .includes(query.toLowerCase()),
       ),
-    [filter, query, onchainBattles],
+    [filter, query, onchainBattles, isError],
   );
 
   return (
@@ -59,7 +60,7 @@ export function BattlesPage() {
             inspect every settlement.
           </p>
         </div>
-        <div className="relative w-full max-w-md">
+        <div className="relative w-full lg:max-w-md">
           <Search className="absolute left-3 top-3.5 h-4 w-4" />
           <Input
             value={query}
@@ -70,9 +71,9 @@ export function BattlesPage() {
         </div>
       </div>
       {tweetBattleArenaContract && isError && (
-        <div className="mt-6 border-2 border-ember bg-white p-4 text-sm font-semibold">
-          On-chain battles could not be loaded from the Monad RPC. The page is
-          waiting for live contract data.
+        <div className="mt-6 border-2 border-acid bg-white p-4 text-sm font-semibold">
+          On-chain battles could not be loaded from the Monad RPC. Showing the
+          demo battle list instead.
         </div>
       )}
       <div className="my-8 flex flex-wrap items-center gap-3">
@@ -93,7 +94,7 @@ export function BattlesPage() {
           Loading on-chain battles...
         </div>
       )}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {battles.map((battle) => (
           <BattleCard key={battle.id} battle={battle} />
         ))}

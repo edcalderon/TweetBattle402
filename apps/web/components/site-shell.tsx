@@ -1,8 +1,20 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Swords } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ArrowUpRight, Menu, Swords, X } from "lucide-react";
 import { WalletButton } from "@/components/wallet-button";
 
+const navLinks = [
+  { href: "/battles", label: "Explore" },
+  { href: "/create", label: "Create" },
+];
+
 export function SiteShell({ children }: { children: React.ReactNode }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+
   return (
     <div className="min-h-screen bg-paper text-ink">
       <header className="sticky top-0 z-40 border-b-2 border-ink bg-paper/95 backdrop-blur">
@@ -10,19 +22,25 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
           <Link
             href="/"
             className="flex items-center gap-2 text-lg font-black uppercase tracking-[-0.04em]"
+            onClick={() => setMobileMenuOpen(false)}
           >
             <span className="grid h-8 w-8 place-items-center bg-ink text-acid">
               <Swords className="h-4 w-4" />
             </span>
             TweetBattle<span className="text-ember">402</span>
           </Link>
+
+          {/* Desktop nav */}
           <nav className="hidden items-center gap-7 text-xs font-black uppercase tracking-[0.13em] md:flex">
-            <Link href="/battles" className="hover:text-ember">
-              Explore
-            </Link>
-            <Link href="/create" className="hover:text-ember">
-              Create
-            </Link>
+            {navLinks.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={pathname === href ? "text-ember" : "hover:text-ember"}
+              >
+                {label}
+              </Link>
+            ))}
             <a
               href="https://testnet.monadexplorer.com"
               target="_blank"
@@ -32,10 +50,54 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               Monad <ArrowUpRight className="h-3 w-3" />
             </a>
           </nav>
-          <WalletButton />
+
+          <div className="flex items-center gap-2">
+            <WalletButton />
+            {/* Hamburger */}
+            <button
+              className="grid h-9 w-9 place-items-center border-2 border-ink md:hidden"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {mobileMenuOpen ? (
+                <X className="h-4 w-4" />
+              ) : (
+                <Menu className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="border-t-2 border-ink bg-paper md:hidden">
+            <nav className="flex flex-col">
+              {navLinks.map(({ href, label }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="border-b border-ink/20 px-6 py-4 text-sm font-black uppercase tracking-[0.13em] hover:bg-ink hover:text-paper"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {label}
+                </Link>
+              ))}
+              <a
+                href="https://testnet.monadexplorer.com"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 border-b border-ink/20 px-6 py-4 text-sm font-black uppercase tracking-[0.13em] hover:bg-ink hover:text-paper"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Monad Explorer <ArrowUpRight className="h-3 w-3" />
+              </a>
+            </nav>
+          </div>
+        )}
       </header>
+
       {children}
+
       <footer className="border-t-2 border-ink bg-ink px-4 py-10 text-paper md:px-8">
         <div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-6 md:flex-row">
           <div>

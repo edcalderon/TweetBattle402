@@ -276,16 +276,21 @@ export async function fetchBattleRoomData(
   if (!battle) return null;
   if (!publicClient || !TWEET_BATTLE_ARENA_ADDRESS) return null;
 
+  const submissionsPromise =
+    battle.status === "PendingAcceptance"
+      ? Promise.resolve([] as BattleSubmission[])
+      : fetchBattleSubmissions(publicClient, battle).catch(() => []);
+
   const [submissions, viewerHasVoted, viewerTweetCount, owner, resolver] =
     await Promise.all([
-      fetchBattleSubmissions(publicClient, battle),
+      submissionsPromise,
       viewerAddress
         ? publicClient.readContract({
             address: TWEET_BATTLE_ARENA_ADDRESS!,
             abi: tweetBattleArenaAbi,
             functionName: "hasVoted",
             args: [BigInt(battleId), viewerAddress],
-          })
+          }).catch(() => false)
         : Promise.resolve(false),
       viewerAddress
         ? publicClient.readContract({
@@ -293,18 +298,18 @@ export async function fetchBattleRoomData(
             abi: tweetBattleArenaAbi,
             functionName: "tweetCount",
             args: [BigInt(battleId), viewerAddress],
-          })
+          }).catch(() => 0n)
         : Promise.resolve(0n),
       publicClient.readContract({
         address: TWEET_BATTLE_ARENA_ADDRESS!,
         abi: tweetBattleArenaAbi,
         functionName: "owner",
-      }) as Promise<Address>,
+      }).catch(() => zeroAddress) as Promise<Address>,
       publicClient.readContract({
         address: TWEET_BATTLE_ARENA_ADDRESS!,
         abi: tweetBattleArenaAbi,
         functionName: "resolver",
-      }) as Promise<Address>,
+      }).catch(() => zeroAddress) as Promise<Address>,
     ]);
 
   return {

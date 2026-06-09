@@ -20,10 +20,13 @@ import {
   CONTRACT_ADDRESSES,
   MONAD_TESTNET_CHAIN,
 } from "@tweetbattle402/shared";
+import appPackageJson from "../package.json";
 import { demoBattles } from "@/lib/demo-data";
 import { BattleCard } from "@/components/battle-card";
 import { Button } from "@/components/ui/button";
 import { fetchBattles, tweetBattleArenaContract } from "@/lib/onchain";
+
+const appVersion = appPackageJson.version;
 
 const steps = [
   {
@@ -56,10 +59,13 @@ export function LandingPage() {
     queryKey: ["tweetbattle402", "landing-battles"],
     queryFn: () => fetchBattles(publicClient),
     enabled: Boolean(tweetBattleArenaContract && publicClient),
-    refetchInterval: 20_000,
+    retry: false,
+    refetchInterval: (query) => (query.state.data ? 20_000 : false),
   });
   const sourceBattles = tweetBattleArenaContract
-    ? onchainBattles ?? []
+    ? isError
+      ? demoBattles
+      : onchainBattles ?? []
     : demoBattles;
 
   return (
@@ -67,7 +73,7 @@ export function LandingPage() {
       <section className="noise relative overflow-hidden border-b-2 border-ink bg-ink text-paper">
         <div className="absolute -right-20 top-20 h-72 w-72 rotate-12 border-[40px] border-mon/35" />
         <div className="absolute bottom-8 right-[28%] h-16 w-16 rounded-full bg-ember" />
-        <div className="relative mx-auto grid min-h-[690px] max-w-[1440px] items-center gap-12 px-4 py-20 md:px-8 lg:grid-cols-[1.3fr_.7fr]">
+        <div className="relative mx-auto grid max-w-[1440px] items-center gap-10 px-4 py-16 md:px-8 md:py-20 lg:min-h-[690px] lg:grid-cols-[1.3fr_.7fr]">
           <div className="animate-rise">
             <div className="mb-7 flex items-center gap-3 text-xs font-black uppercase tracking-[0.2em] text-acid">
               <span className="h-2 w-2 animate-pulse rounded-full bg-acid" />
@@ -161,11 +167,11 @@ export function LandingPage() {
               Put skin in the game.
             </h2>
           </div>
-          <div className="grid border-2 border-ink md:grid-cols-3">
+          <div className="grid border-2 border-ink sm:grid-cols-3">
             {steps.map((step, index) => (
               <article
                 key={step.n}
-                className={`relative min-h-72 p-6 ${index < 2 ? "border-b-2 border-ink md:border-b-0 md:border-r-2" : ""}`}
+                className={`relative min-h-60 p-6 ${index < 2 ? "border-b-2 border-ink sm:border-b-0 sm:border-r-2" : ""}`}
               >
                 <span className="font-mono text-xs font-black">{step.n}</span>
                 <step.icon className="mt-10 h-9 w-9" strokeWidth={1.7} />
@@ -239,7 +245,7 @@ export function LandingPage() {
             </Link>
           </Button>
         </div>
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {sourceBattles.map((battle) => (
             <BattleCard key={battle.id} battle={battle} />
           ))}
@@ -250,8 +256,9 @@ export function LandingPage() {
           </div>
         )}
         {tweetBattleArenaContract && isError && (
-          <div className="mt-6 border-2 border-ember bg-white p-4 text-sm font-semibold">
-            On-chain battles could not be loaded from the Monad RPC.
+          <div className="mt-6 border-2 border-acid bg-white p-4 text-sm font-semibold">
+            On-chain battles could not be loaded from the Monad RPC. Showing
+            the demo battles instead.
           </div>
         )}
         {tweetBattleArenaContract &&
@@ -309,6 +316,10 @@ export function LandingPage() {
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
+              </div>
+              <div className="mt-5 text-xs font-black uppercase tracking-[0.2em] text-black/50">
+                Release{" "}
+                <span className="font-mono text-black/70">v{appVersion}</span>
               </div>
             </div>
             <a

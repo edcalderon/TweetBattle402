@@ -1,0 +1,24 @@
+{
+  "rootPackageJson": "package.json",
+  "packages": ["apps/*", "packages/*"],
+  "changelogFile": "CHANGELOG.md",
+  "conventionalCommits": true,
+  "syncDependencies": true,
+  "ignorePackages": [],
+  "releaseGuard": {
+    "enabled": true,
+    "tagPrefix": "v",
+    "allowBuildMetadata": true,
+    "checkReleaseFloor": true,
+    "metadataFiles": []
+  },
+  "extensionConfig": {
+    "release-guard": {
+      "enabled": true,
+      "tagPrefix": "v",
+      "allowBuildMetadata": true,
+      "checkReleaseFloor": true,
+      "metadataFiles": []
+    }
+  }
+}
