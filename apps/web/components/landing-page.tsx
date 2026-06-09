@@ -14,19 +14,10 @@ import {
   Vote,
 } from "lucide-react";
 import { usePublicClient } from "wagmi";
-import { ExternalLink } from "lucide-react";
-import {
-  buildExplorerLink,
-  CONTRACT_ADDRESSES,
-  MONAD_TESTNET_CHAIN,
-} from "@tweetbattle402/shared";
-import appPackageJson from "../package.json";
 import { demoBattles } from "@/lib/demo-data";
 import { BattleCard } from "@/components/battle-card";
 import { Button } from "@/components/ui/button";
 import { fetchBattles, tweetBattleArenaContract } from "@/lib/onchain";
-
-const appVersion = appPackageJson.version;
 
 const steps = [
   {
@@ -288,52 +279,6 @@ export function LandingPage() {
           </Button>
         </div>
       </section>
-
-      <footer className="border-t-2 border-ink bg-white px-4 py-8 md:px-8">
-        <div className="mx-auto max-w-[1440px]">
-          <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-            <div>
-              <div className="text-xs font-black uppercase tracking-[0.2em] text-black/50">
-                Network & Contract
-              </div>
-              <div className="mt-2 flex flex-col gap-2">
-                <div className="text-sm font-semibold text-black/60">
-                  {MONAD_TESTNET_CHAIN.name}
-                </div>
-                {tweetBattleArenaContract && (
-                  <a
-                    href={buildExplorerLink(
-                      "address",
-                      CONTRACT_ADDRESSES[MONAD_TESTNET_CHAIN.id] ?? "",
-                    )}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-mono text-mon hover:text-ember"
-                  >
-                    {CONTRACT_ADDRESSES[MONAD_TESTNET_CHAIN.id]?.slice(0, 10)}
-                    ...
-                    {CONTRACT_ADDRESSES[MONAD_TESTNET_CHAIN.id]?.slice(-8)}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
-              </div>
-              <div className="mt-5 text-xs font-black uppercase tracking-[0.2em] text-black/50">
-                Release{" "}
-                <span className="font-mono text-black/70">v{appVersion}</span>
-              </div>
-            </div>
-            <a
-              href={MONAD_TESTNET_CHAIN.blockExplorers?.default?.url}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.15em] text-black/50 hover:text-ink"
-            >
-              {MONAD_TESTNET_CHAIN.blockExplorers?.default?.name}{" "}
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          </div>
-        </div>
-      </footer>
     </main>
   );
 }

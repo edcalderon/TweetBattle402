@@ -3,7 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, Menu, Swords, X } from "lucide-react";
+import { ArrowUpRight, ExternalLink, Menu, Swords, X } from "lucide-react";
+import {
+  buildExplorerLink,
+  CONTRACT_ADDRESSES,
+  MONAD_TESTNET_CHAIN,
+} from "@tweetbattle402/shared";
+import appPackageJson from "../package.json";
 import { WalletButton } from "@/components/wallet-button";
 
 const navLinks = [
@@ -11,9 +17,21 @@ const navLinks = [
   { href: "/create", label: "Create" },
 ];
 
+const appVersion = appPackageJson.version;
+
 export function SiteShell({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const explorer = MONAD_TESTNET_CHAIN.blockExplorers?.default;
+  const explorerName = explorer?.name ?? "Monad Explorer";
+  const explorerUrl = explorer?.url ?? "https://testnet.monadvision.com";
+  const contractAddress = CONTRACT_ADDRESSES[MONAD_TESTNET_CHAIN.id];
+  const contractHref = contractAddress
+    ? buildExplorerLink("address", contractAddress)
+    : null;
+  const contractDisplay = contractAddress
+    ? `${contractAddress.slice(0, 10)}...${contractAddress.slice(-8)}`
+    : null;
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -99,18 +117,84 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       {children}
 
       <footer className="border-t-2 border-ink bg-ink px-4 py-10 text-paper md:px-8">
-        <div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-6 md:flex-row">
-          <div>
-            <div className="font-serif text-3xl font-bold italic">
-              Stake your words.
+        <div className="mx-auto max-w-[1440px]">
+          <div className="grid gap-8 lg:grid-cols-[1.05fr_.95fr]">
+            <div>
+              <div className="font-serif text-3xl font-bold italic md:text-4xl">
+                Stake your words.
+              </div>
+              <p className="mt-3 max-w-lg text-sm leading-relaxed text-paper/55">
+                X is the public arena. Monad is the escrow, voting, reward,
+                and reputation layer. No X API required.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-paper/45">
+                <span className="rounded-full border border-paper/15 px-3 py-1">
+                  MVP
+                </span>
+                <span className="rounded-full border border-paper/15 px-3 py-1">
+                  Monad Testnet
+                </span>
+                <span className="rounded-full border border-paper/15 px-3 py-1">
+                  Trusted Resolver
+                </span>
+              </div>
             </div>
-            <p className="mt-2 max-w-lg text-sm text-paper/55">
-              X is the public arena. Monad is the escrow, voting, reward, and
-              reputation layer. No X API required.
-            </p>
-          </div>
-          <div className="text-xs font-bold uppercase tracking-[0.16em] text-paper/50">
-            MVP · Monad Testnet · Trusted Resolver
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="border border-paper/10 bg-paper/5 p-5">
+                <div className="text-xs font-black uppercase tracking-[0.2em] text-paper/45">
+                  Network & Contract
+                </div>
+                <div className="mt-4 text-lg font-bold text-paper">
+                  {MONAD_TESTNET_CHAIN.name}
+                </div>
+                {contractHref ? (
+                  <a
+                    href={contractHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center gap-1 text-xs font-mono text-mon transition-colors hover:text-ember"
+                  >
+                    {contractDisplay}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                ) : (
+                  <div className="mt-2 text-sm text-paper/55">
+                    Contract address unavailable
+                  </div>
+                )}
+              </div>
+
+              <div className="border border-paper/10 bg-paper/5 p-5">
+                <div className="text-xs font-black uppercase tracking-[0.2em] text-paper/45">
+                  Release
+                </div>
+                <div className="mt-4 text-lg font-bold text-paper">
+                  v{appVersion}
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-paper/55">
+                  Synced across the workspace and Cloud Build image tag.
+                </p>
+              </div>
+
+              <div className="border border-paper/10 bg-paper/5 p-5 sm:col-span-2">
+                <div className="text-xs font-black uppercase tracking-[0.2em] text-paper/45">
+                  Explorer
+                </div>
+                <a
+                  href={explorerUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 inline-flex items-center gap-2 text-lg font-bold text-paper transition-colors hover:text-acid"
+                >
+                  {explorerName}
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+                <p className="mt-2 text-sm leading-relaxed text-paper/55">
+                  Inspect Monad transactions, contracts, and battle activity.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </footer>
