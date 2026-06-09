@@ -28,10 +28,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'tweetbattle402' }}
       GCP_REGION: ${{ vars.GCP_REGION || 'us-central1' }}
-      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-      GCP_SERVICE_ACCOUNT_EMAIL: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER || 'projects/877960262099/locations/global/workloadIdentityPools/github-actions/providers/github' }}
+      GCP_SERVICE_ACCOUNT_EMAIL: ${{ vars.GCP_SERVICE_ACCOUNT_EMAIL || 'tb4-967@tweetbattle402.iam.gserviceaccount.com' }}
       TARGET_COMMIT_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.commit_sha || github.sha }}
       TARGET_BUILD_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.build_id || '' }}
 
@@ -39,13 +39,11 @@ jobs:
       - name: Validate GitHub variables
         run: |
           set -euo pipefail
-
-          for key in GCP_PROJECT_ID GCP_WORKLOAD_IDENTITY_PROVIDER GCP_SERVICE_ACCOUNT_EMAIL; do
-            if [ -z "${!key:-}" ]; then
-              echo "::error::Missing required repository variable: $key"
-              exit 1
-            fi
-          done
+          printf 'Using project %s, region %s, provider %s, service account %s\n' \
+            "$GCP_PROJECT_ID" \
+            "$GCP_REGION" \
+            "$GCP_WORKLOAD_IDENTITY_PROVIDER" \
+            "$GCP_SERVICE_ACCOUNT_EMAIL"
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
