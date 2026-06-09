@@ -4,11 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, ExternalLink, Menu, Swords, X } from "lucide-react";
-import {
-  buildExplorerLink,
-  CONTRACT_ADDRESSES,
-  MONAD_TESTNET_CHAIN,
-} from "@tweetbattle402/shared";
+import { CONTRACT_ADDRESSES, MONAD_TESTNET_CHAIN } from "@tweetbattle402/shared";
 import appPackageJson from "../package.json";
 import { WalletButton } from "@/components/wallet-button";
 
@@ -23,12 +19,9 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const explorer = MONAD_TESTNET_CHAIN.blockExplorers?.default;
-  const explorerName = explorer?.name ?? "Monad Explorer";
+  const explorerName = "Monad Testnet Explorer";
   const explorerUrl = explorer?.url ?? "https://testnet.monadvision.com";
   const contractAddress = CONTRACT_ADDRESSES[MONAD_TESTNET_CHAIN.id];
-  const contractHref = contractAddress
-    ? buildExplorerLink("address", contractAddress)
-    : null;
   const contractDisplay = contractAddress
     ? `${contractAddress.slice(0, 10)}...${contractAddress.slice(-8)}`
     : null;
@@ -141,43 +134,31 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="border border-paper/10 bg-paper/5 p-5">
+              <div className="border border-paper/10 bg-paper/5 p-4 sm:p-5">
                 <div className="text-xs font-black uppercase tracking-[0.2em] text-paper/45">
                   Network & Contract
                 </div>
-                <div className="mt-4 text-lg font-bold text-paper">
+                <div className="mt-4 text-sm font-bold text-paper">
                   {MONAD_TESTNET_CHAIN.name}
                 </div>
-                {contractHref ? (
-                  <a
-                    href={contractHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 inline-flex items-center gap-1 text-xs font-mono text-mon transition-colors hover:text-ember"
-                  >
-                    {contractDisplay}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                ) : (
-                  <div className="mt-2 text-sm text-paper/55">
-                    Contract address unavailable
-                  </div>
-                )}
+                <div className="mt-2 font-mono text-[11px] leading-relaxed text-paper/55 break-all">
+                  {contractDisplay ?? "Contract address unavailable"}
+                </div>
               </div>
 
-              <div className="border border-paper/10 bg-paper/5 p-5">
+              <div className="border border-paper/10 bg-paper/5 p-4 sm:p-5">
                 <div className="text-xs font-black uppercase tracking-[0.2em] text-paper/45">
                   Release
                 </div>
-                <div className="mt-4 text-lg font-bold text-paper">
+                <div className="mt-4 text-sm font-bold text-paper">
                   v{appVersion}
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-paper/55">
+                <p className="mt-2 text-xs leading-relaxed text-paper/55">
                   Synced across the workspace and Cloud Build image tag.
                 </p>
               </div>
 
-              <div className="border border-paper/10 bg-paper/5 p-5 sm:col-span-2">
+              <div className="border border-paper/10 bg-paper/5 p-4 sm:col-span-2 sm:p-5">
                 <div className="text-xs font-black uppercase tracking-[0.2em] text-paper/45">
                   Explorer
                 </div>
@@ -185,12 +166,12 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                   href={explorerUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-4 inline-flex items-center gap-2 text-lg font-bold text-paper transition-colors hover:text-acid"
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-paper transition-colors hover:text-acid"
                 >
                   {explorerName}
-                  <ExternalLink className="h-4 w-4" />
+                  <ExternalLink className="h-3.5 w-3.5" />
                 </a>
-                <p className="mt-2 text-sm leading-relaxed text-paper/55">
+                <p className="mt-2 text-xs leading-relaxed text-paper/55">
                   Inspect Monad transactions, contracts, and battle activity.
                 </p>
               </div>
