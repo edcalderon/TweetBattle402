@@ -62,18 +62,27 @@ jobs:
         run: |
           set -euo pipefail
 
+          find_build_id() {
+            local provenance_filter="$1"
+
+            gcloud builds list \
+              --project="$GCP_PROJECT_ID" \
+              --region="$GCP_REGION" \
+              --filter="${provenance_filter}=${TARGET_COMMIT_SHA}" \
+              --sort-by="~create_time" \
+              --limit=1 \
+              --format="value(id)"
+          }
+
           build_id="${TARGET_BUILD_ID:-}"
           if [ -z "$build_id" ]; then
             echo "Searching for Cloud Build tied to commit ${TARGET_COMMIT_SHA}..."
             deadline=$((SECONDS + 1800))
             while [ -z "$build_id" ] && [ "$SECONDS" -lt "$deadline" ]; do
-              build_id="$(gcloud builds list \
-                --project="$GCP_PROJECT_ID" \
-                --region="$GCP_REGION" \
-                --filter="source_provenance.resolved_repo_source.commit_sha=${TARGET_COMMIT_SHA}" \
-                --sort-by="~create_time" \
-                --limit=1 \
-                --format="value(id)")"
+              build_id="$(find_build_id "sourceProvenance.resolvedGitSource.revision")"
+              if [ -z "$build_id" ]; then
+                build_id="$(find_build_id "sourceProvenance.resolvedRepoSource.commitSha")"
+              fi
               if [ -z "$build_id" ]; then
                 sleep 15
               fi
